@@ -7,6 +7,19 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        
+        <Button Content="Extract landmarks" Margin="193,252,476,0" VerticalAlignment="Top" Click="Button_Click" VerticalContentAlignment="Center" Height="33"/>
+        <Label Content="Current Frame:" HorizontalAlignment="Left" Margin="100,169,0,0" VerticalAlignment="Top"/>
+        <Label Content="Frames:" HorizontalAlignment="Left" Margin="100,138,0,0" VerticalAlignment="Top" RenderTransformOrigin="-1.846,0.198"/>
+        <TextBox x:Name="textBox2" HorizontalAlignment="Left" Height="23" Margin="191,139,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
+        <TextBox x:Name="textBox3" HorizontalAlignment="Left" Height="23" Margin="191,106,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="402"/>
+        <Label Content="Video:" HorizontalAlignment="Left" Margin="100,106,0,0" VerticalAlignment="Top"/>
+        <Button x:Name="sourceButton" Content="Source Folder" HorizontalAlignment="Left" Margin="610,47,0,0" VerticalAlignment="Top" Width="98" Height="23" Click="Button_Click_1"/>
+        <Label Content="Output:" HorizontalAlignment="Left" Margin="100,75,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="textBox4" HorizontalAlignment="Left" Height="23" Margin="191,75,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="402"/>
+        <Button x:Name="outputButton" Content="Output Folder" HorizontalAlignment="Left" Margin="610,75,0,0" VerticalAlignment="Top" Width="98" Height="23" Click="OutputButton_Click"/>
+        <Label Content="Source:" HorizontalAlignment="Left" Margin="100,47,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="textBox5" HorizontalAlignment="Left" Height="23" Margin="191,47,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="402"/>
+        <TextBox x:Name="textBox1" HorizontalAlignment="Left" Height="23" Margin="193,173,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
+
     </Grid>
 </Window>
