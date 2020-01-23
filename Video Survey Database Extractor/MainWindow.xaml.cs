@@ -62,6 +62,7 @@ namespace Video_Survey_Database_Extractor
             PXCMImage color;
             PXCMImage depth;
             PXCMImage ir;
+            PXCMCapture.Sample sample;
             PXCMImage.ImageData imageColor;
             PXCMImage.ImageData imageDepth;
             PXCMImage.ImageData imageIr;
@@ -101,6 +102,11 @@ namespace Video_Survey_Database_Extractor
                             textBox3.Text = inputFile;
                         }));
 
+                        sm.EnableStream(PXCMCapture.StreamType.STREAM_TYPE_COLOR, width, height, 0);
+                        sm.EnableStream(PXCMCapture.StreamType.STREAM_TYPE_DEPTH, width, height);
+                        sm.EnableStream(PXCMCapture.StreamType.STREAM_TYPE_IR, width, height);
+
+
                         //Extract Landmarks
                         sm.EnableFace();
                         faceModule = sm.QueryFace();
@@ -117,6 +123,9 @@ namespace Video_Survey_Database_Extractor
                         // This string stores all data before saving to csv file
                         landmarks = null;
                         // Start AcquireFrame/ReleaseFrame loop
+                        var stopwatch = new Stopwatch();
+                        stopwatch.Start();
+
                         while (sm.AcquireFrame(true) >= pxcmStatus.PXCM_STATUS_NO_ERROR)
                         {
                             // Retrieve face data
@@ -129,6 +138,8 @@ namespace Video_Survey_Database_Extractor
                             }
                             if (faceData != null)
                             {
+                               
+
                                 Int32 nfaces = faceData.QueryNumberOfDetectedFaces();
                                 frameIndex = sm.captureManager.QueryFrameIndex();
                                 frameTimeStamp = sm.captureManager.QueryFrameTimeStamp();
@@ -139,6 +150,40 @@ namespace Video_Survey_Database_Extractor
                                 }
                                 for (Int32 i = 0; i < nfaces; i++)
                                 {
+
+                                    //Retrieve the image
+                                    sample = sm.QueryFaceSample();
+                                    // Work on the images
+                                    color = sample.color;
+                                    depth = sample.depth;
+                                    ir = sample.ir;
+
+                                    color.AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.PixelFormat.PIXEL_FORMAT_RGB32, out imageColor);
+                                    depth.AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.PixelFormat.PIXEL_FORMAT_DEPTH_RAW, out imageDepth);
+                                    ir.AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.PixelFormat.PIXEL_FORMAT_RGB24, out imageIr);
+                                    //convert it to Bitmap
+                                    wbm1 = imageColor.ToWritableBitmap(0, color.info.width, color.info.height, 100.0, 100.0);
+                                    wbm2 = imageDepth.ToWritableBitmap(0, depth.info.width, depth.info.height, 100.0, 100.0);
+                                    wbm3 = imageIr.ToWritableBitmap(0, ir.info.width, ir.info.height, 100.0, 100.0);
+
+                                    color.ReleaseAccess(imageColor);
+                                    depth.ReleaseAccess(imageDepth);
+                                    ir.ReleaseAccess(imageIr);
+                                    sm.ReleaseFrame();
+
+
+                                    //CONTINUAR DAQUI!!!!!!!!!!
+                                    file = Path.GetFileNameWithoutExtension(input_file);
+                                    folder = Path.GetFileName(Path.GetDirectoryName(input_file));
+                                    nameColor = file + "_color_" + frameIndex + ".png";
+                                    nameDepth = file + "_depth_" + frameIndex + ".png";
+                                    nameIr = file + "_ir_" + frameIndex + ".png";
+                                    CreateThumbnail(folder, nameColor, wbm1);
+                                    CreateThumbnail(folder, nameDepth, wbm2);
+                                    CreateThumbnail(folder, nameIr, wbm3);
+
+
+
                                     PXCMFaceData.Face face = faceData.QueryFaceByIndex(i);
                                     PXCMFaceData.LandmarksData landmarkData = face.QueryLandmarks();
 
@@ -150,31 +195,39 @@ namespace Video_Survey_Database_Extractor
 
                                         Application.Current.Dispatcher.BeginInvoke(new Action(() => textBox1.Text = frameIndex.ToString()));
                                         //Falta colocar os paths das imagens
-                                        landmarks += inputFile.Split('\\').Last() + ";" + ";" + ";" + ";" + frameIndex + ";" + frameTimeStamp + ";"; // Begin line with frame info
+                                        landmarks += inputFile.Split('\\').Last() + ";" + frameIndex + ";" + paths.rgbFolder + ";" + paths.depthFolder + ";" + paths.irFolder + ";" + frameTimeStamp + ";"; // Begin line with frame info
 
                                         for (int j = 0; j < landmarkPoints.Length; j++) // Writes landmarks coordinates along the line 
                                         {
                                             //get world coordinates
-                                            landmarks += landmarkPoints[j].world.x.ToString() + ";" + landmarkPoints[j].world.y.ToString() + ";" + landmarkPoints[j].world.z.ToString() + ";";
+                                            landmarks += /*landmarkPoints[j].source.index + ";" +*/ landmarkPoints[j].world.x.ToString() + ";" + landmarkPoints[j].world.y.ToString() + ";" + landmarkPoints[j].world.z.ToString() + ";";
+                                        } 
+                                        for (int j = 0; j < landmarkPoints.Length; j++)
+                                        { 
                                             //get coordinate of the image pixel
-                                            landmarks += landmarkPoints[j].image.x.ToString() + ";" + landmarkPoints[j].image.y.ToString() + ";";
-                                           /* if (j % 100 == 0)//DEBUGAR O J
-                                            {
-                                                WriteToFile(paths.csvFile, landmarks); // After 100 frames, writes to file and empties landmarks string
-                                                landmarks = null;
-                                            }*/
-                                        } // DEBUGAR INDEX DO LANDMARK landmarkPoints[j].source.ALIAS E INDEX E CONFIANÇA
-                                        landmarks += '\n'; // Breaks line after the end of the frame coordinates
-                                        WriteToFile(paths.csvFile, landmarks); // After 100 frames, writes to file and empties landmarks string
-                                        landmarks = null;//TENTAR SALVAR MAIS DE UM FRAME POR VEZ, DIMINUIR ESCRITA EM DISCO
+                                            landmarks += /*landmarkPoints[j].confidenceImage + ";" + */landmarkPoints[j].image.x.ToString() + ";" + landmarkPoints[j].image.y.ToString() + ";";
+                                        }
+                                        landmarks += '\n'; // Breaks line after the end of the frame coordinates                                        
                                     }
                                 }
                             }
                             // Release the frame
-                            if (faceData != null) faceData.Dispose();
+                            if (faceData != null)
+                                faceData.Dispose();
                             sm.ReleaseFrame();
+
+                            if (frameIndex % 5 == 0) //Save to disk each 5 Frames analyzed
+                            {
+                                WriteToFile(paths.csvFile, landmarks);
+                                landmarks = null;
+                            }
                         }
+                        WriteToFile(paths.csvFile, landmarks); // Write the latest landmarks
+                        landmarks = null;
                         sm.Dispose();
+
+                        stopwatch.Stop();
+                        Debug.WriteLine($"Tempo passado: {stopwatch.Elapsed}");
                     }
                 }
             }
@@ -182,17 +235,12 @@ namespace Video_Survey_Database_Extractor
 
         private void WriteToFile(string csvFile, string landmarks)
         {
-            //output_file = output_folder + "\\" + folderName.Split('\\').Last() + ".csv";
-
             if (File.Exists(csvFile))//Append more data
-            //{
                 using (System.IO.StreamWriter sw = File.AppendText(csvFile))
                 {
                     //get world and image coordinates
                     sw.Write(landmarks);
                 }
-                //landmarks = null;
-           // }
         }
 
         struct Paths
@@ -230,7 +278,6 @@ namespace Video_Survey_Database_Extractor
             Directory.CreateDirectory(paths.depthFolder);
             Directory.CreateDirectory(paths.irFolder);
 
-
             /*foreach (var s in streamFolderNames) //Create subfolders (RGB, Depth, IR) where images will be saved
             {
                 Directory.CreateDirectory(output + s);
@@ -260,8 +307,7 @@ namespace Video_Survey_Database_Extractor
                     for (int lm = 0; lm < 78; lm++) // Dataframe headers with COLOR IMAGES landmarks 
                     {
                         landmarks += "color_" + lm + "_X" + ";";
-                        landmarks += "color_" + lm + "_Y" + ";";
-                        //landmarks += "color_" + lm + "_Z" + ";";
+                        landmarks += "color_" + lm + "_Y" + ";";                     
                     }
                     landmarks += '\n';
                     fs.Write(landmarks);
@@ -322,7 +368,7 @@ namespace Video_Survey_Database_Extractor
                 textBox5.Text = folderName;
                 input_folder = folderName;
 
-                dirsSource = new List<string>(System.IO.Directory.EnumerateDirectories(folderName).Where(x => x.Contains("Record_")));
+                dirsSource = new List<string>(System.IO.Directory.EnumerateDirectories(folderName).Where(x => x.Contains("Record")));
             }
         }
 

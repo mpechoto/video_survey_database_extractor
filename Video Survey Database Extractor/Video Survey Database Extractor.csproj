@@ -55,9 +55,8 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="libpxcclr.cs, Version=10.0.26.396, Culture=neutral, PublicKeyToken=ca106b2214526f83, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Extractor2\Extractor2\bin\x64\Debug\libpxcclr.cs.dll</HintPath>
+    <Reference Include="libpxcclr.cs">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Intel\RSSDK\bin\x64\libpxcclr.cs.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
