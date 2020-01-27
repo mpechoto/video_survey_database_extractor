@@ -35,7 +35,15 @@ namespace Video_Survey_Database_Extractor
         private string output_file = null;
         private IEnumerable<CheckBox> imageStreams;
 
-        List<string> dirsSource;        
+        List<string> dirsSource;
+
+        struct Paths
+        {
+            public string csvFile;
+            public string rgbFolder;
+            public string depthFolder;
+            public string irFolder;
+        }
 
         public MainWindow()
         {
@@ -50,7 +58,7 @@ namespace Video_Survey_Database_Extractor
 
         private void ProcessingThread()
         {
-            string nameColor, nameDepth, nameIr, file, folder;
+            string videoName, nameColor, nameDepth, nameIr, file, folder;
             int width = 640;
             int height = 480;
             
@@ -130,6 +138,7 @@ namespace Video_Survey_Database_Extractor
                         {
                             // Retrieve face data
                             faceModule = sm.QueryFace();
+                            frameIndex = sm.captureManager.QueryFrameIndex();
                             if (faceModule != null)
                             {
                                 // Retrieve the most recent processed data
@@ -138,10 +147,8 @@ namespace Video_Survey_Database_Extractor
                             }
                             if (faceData != null)
                             {
-                               
-
                                 Int32 nfaces = faceData.QueryNumberOfDetectedFaces();
-                                frameIndex = sm.captureManager.QueryFrameIndex();
+                                
                                 frameTimeStamp = sm.captureManager.QueryFrameTimeStamp();
                                 //PXCMCapture.Sample sample = senseManager.QuerySample();
                                 if (nfaces == 0) //If none face was detected, we will consider as a "lost frame"
@@ -150,9 +157,9 @@ namespace Video_Survey_Database_Extractor
                                 }
                                 for (Int32 i = 0; i < nfaces; i++)
                                 {
-
                                     //Retrieve the image
-                                    sample = sm.QueryFaceSample();
+                                    //sample = sm.QueryFaceSample();
+                                    sample = sm.QuerySample();                                    
                                     // Work on the images
                                     color = sample.color;
                                     depth = sample.depth;
@@ -161,6 +168,7 @@ namespace Video_Survey_Database_Extractor
                                     color.AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.PixelFormat.PIXEL_FORMAT_RGB32, out imageColor);
                                     depth.AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.PixelFormat.PIXEL_FORMAT_DEPTH_RAW, out imageDepth);
                                     ir.AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.PixelFormat.PIXEL_FORMAT_RGB24, out imageIr);
+                            
                                     //convert it to Bitmap
                                     wbm1 = imageColor.ToWritableBitmap(0, color.info.width, color.info.height, 100.0, 100.0);
                                     wbm2 = imageDepth.ToWritableBitmap(0, depth.info.width, depth.info.height, 100.0, 100.0);
@@ -168,25 +176,21 @@ namespace Video_Survey_Database_Extractor
 
                                     color.ReleaseAccess(imageColor);
                                     depth.ReleaseAccess(imageDepth);
-                                    ir.ReleaseAccess(imageIr);
-                                    sm.ReleaseFrame();
-
-
-                                    //CONTINUAR DAQUI!!!!!!!!!!
-                                    file = Path.GetFileNameWithoutExtension(input_file);
-                                    folder = Path.GetFileName(Path.GetDirectoryName(input_file));
-                                    nameColor = file + "_color_" + frameIndex + ".png";
-                                    nameDepth = file + "_depth_" + frameIndex + ".png";
-                                    nameIr = file + "_ir_" + frameIndex + ".png";
-                                    CreateThumbnail(folder, nameColor, wbm1);
-                                    CreateThumbnail(folder, nameDepth, wbm2);
-                                    CreateThumbnail(folder, nameIr, wbm3);
-
-
-
+                                    ir.ReleaseAccess(imageIr);                                                                    
+                                                                        
+                                    //file = Path.GetFileNameWithoutExtension(input_file);
+                                    //folder = Path.GetFileName(Path.GetDirectoryName(input_file));
+                                    videoName = inputFile.Split('\\').Last().Split('.')[0];
+                                    nameColor =  videoName + "_color_" + frameIndex + ".png";
+                                    nameDepth = videoName + "_depth_" + frameIndex + ".png";
+                                    nameIr = videoName + "_ir_" + frameIndex + ".png";
+                                    CreateThumbnail(paths.rgbFolder, nameColor, wbm1);
+                                    CreateThumbnail(paths.depthFolder, nameDepth, wbm2);
+                                    CreateThumbnail(paths.irFolder, nameIr, wbm3);
+                                    
                                     PXCMFaceData.Face face = faceData.QueryFaceByIndex(i);
                                     PXCMFaceData.LandmarksData landmarkData = face.QueryLandmarks();
-
+                                    
                                     //var point3 = new PXCMPoint3DF32(); ????
                                     if (landmarkData != null)
                                     {
@@ -211,6 +215,7 @@ namespace Video_Survey_Database_Extractor
                                     }
                                 }
                             }
+                           
                             // Release the frame
                             if (faceData != null)
                                 faceData.Dispose();
@@ -233,6 +238,23 @@ namespace Video_Survey_Database_Extractor
             }
         }
 
+        void CreateThumbnail(string folderName, string filename, BitmapSource image)
+        {
+            //string currentDir = output_folder + "\\" + folderName;
+            //Directory.CreateDirectory(currentDir);
+            output_file = folderName + "\\" + filename;
+
+            if (filename != string.Empty)
+            {
+                using (FileStream stream = new FileStream(output_file, FileMode.Create))
+                {
+                    PngBitmapEncoder encoder = new PngBitmapEncoder();
+                    encoder.Frames.Add(BitmapFrame.Create(image));
+                    encoder.Save(stream);
+                }
+            }
+        }
+
         private void WriteToFile(string csvFile, string landmarks)
         {
             if (File.Exists(csvFile))//Append more data
@@ -242,15 +264,7 @@ namespace Video_Survey_Database_Extractor
                     sw.Write(landmarks);
                 }
         }
-
-        struct Paths
-        {
-            public string csvFile;
-            public string rgbFolder;
-            public string depthFolder;
-            public string irFolder;
-        }
-
+                
         private Paths SetupOutput(string folderName)
         {
             var streamFolderNames = new List<string> { "\\RGB", "\\Depth", "\\IR" };
