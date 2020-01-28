@@ -5,25 +5,28 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Video_Survey_Database_Extractor"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        <Button x:Name="ExtractButton" Content="Create Database" Margin="193,252,476,0" VerticalAlignment="Top" VerticalContentAlignment="Center" Height="33" Click="ExtractButton_Click"/>
-        <Label Content="Current Frame:" HorizontalAlignment="Left" Margin="100,181,0,0" VerticalAlignment="Top"/>
-        <Label Content="Frames:" HorizontalAlignment="Left" Margin="100,150,0,0" VerticalAlignment="Top" RenderTransformOrigin="-1.846,0.198"/>
-        <TextBox x:Name="textBox2" HorizontalAlignment="Left" Height="23" Margin="191,151,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
-        <TextBox x:Name="textBox3" HorizontalAlignment="Left" Height="39" Margin="191,107,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="402"/>
-        <Label Content="Video:" HorizontalAlignment="Left" Margin="100,114,0,0" VerticalAlignment="Top"/>
-        <Button x:Name="sourceButton" Content="Source Folder" HorizontalAlignment="Left" Margin="610,47,0,0" VerticalAlignment="Top" Width="98" Height="23" Click="sourceButton_Click"/>
-        <Label Content="Output:" HorizontalAlignment="Left" Margin="100,75,0,0" VerticalAlignment="Top"/>
-        <TextBox x:Name="textBox4" HorizontalAlignment="Left" Height="23" Margin="191,76,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="402"/>
-        <Button x:Name="outputButton" Content="Output Folder" HorizontalAlignment="Left" Margin="610,75,0,0" VerticalAlignment="Top" Width="98" Height="23" Click="OutputButton_Click"/>
-        <Label Content="Source:" HorizontalAlignment="Left" Margin="100,47,0,0" VerticalAlignment="Top"/>
-        <TextBox x:Name="textBox5" HorizontalAlignment="Left" Height="23" Margin="191,47,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="402"/>
-        <TextBox x:Name="textBox1" HorizontalAlignment="Left" Height="23" Margin="191,185,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
-        <CheckBox x:Name="rgbCheckBox" Content="RGB" HorizontalAlignment="Left" Margin="348,151,0,0" VerticalAlignment="Top"/>
-        <CheckBox x:Name="depthCheckBox" Content="Depth" HorizontalAlignment="Left" Margin="348,172,0,0" VerticalAlignment="Top"/>
-        <CheckBox x:Name="irCheckBox" Content="IR" HorizontalAlignment="Left" Margin="348,194,0,0" VerticalAlignment="Top"/>
-        <CheckBox x:Name="landmarkCheckBox" Content="Landmarks (Color Image and World Coordinates)" HorizontalAlignment="Left" Margin="420,172,0,0" VerticalAlignment="Top"/>
+        Title="Video Survey Database Extractor" Height="367" Width="701">
+    <Grid Margin="0,0,2,0">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="0*"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Button x:Name="ExtractButton" Content="Create Database" Margin="215,240,367,0" VerticalAlignment="Top" VerticalContentAlignment="Center" Height="33" Click="ExtractButton_Click" Grid.Column="1"/>
+        <Label Content="Current Frame:" HorizontalAlignment="Left" Margin="25,176,0,0" VerticalAlignment="Top" Grid.Column="1" Height="26" Width="88"/>
+        <Label Content="Total Frames:" HorizontalAlignment="Left" Margin="25,146,0,0" VerticalAlignment="Top" RenderTransformOrigin="-1.846,0.198" Grid.Column="1" Height="26" Width="79"/>
+        <TextBox x:Name="textBox2" HorizontalAlignment="Left" Height="23" Margin="116,151,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Grid.Column="1"/>
+        <TextBox x:Name="textBox3" HorizontalAlignment="Left" Height="42" Margin="116,104,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="402" Grid.Column="1"/>
+        <Label Content="Current Video:" HorizontalAlignment="Left" Margin="25,114,0,0" VerticalAlignment="Top" Grid.Column="1" Height="26" Width="86"/>
+        <Button x:Name="sourceButton" Content="Source Folder" HorizontalAlignment="Left" Margin="535,47,0,0" VerticalAlignment="Top" Width="98" Height="23" Click="sourceButton_Click" Grid.Column="1"/>
+        <Label Content="Output:" HorizontalAlignment="Left" Margin="25,75,0,0" VerticalAlignment="Top" Grid.Column="1" Height="26" Width="50"/>
+        <TextBox x:Name="textBox4" HorizontalAlignment="Left" Height="23" Margin="116,76,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="402" Grid.Column="1"/>
+        <Button x:Name="outputButton" Content="Output Folder" HorizontalAlignment="Left" Margin="535,75,0,0" VerticalAlignment="Top" Width="98" Height="23" Click="OutputButton_Click" Grid.Column="1"/>
+        <Label Content="Source:" HorizontalAlignment="Left" Margin="25,47,0,0" VerticalAlignment="Top" Grid.Column="1" Height="26" Width="49"/>
+        <TextBox x:Name="textBox5" HorizontalAlignment="Left" Height="23" Margin="116,47,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="402" Grid.Column="1"/>
+        <TextBox x:Name="textBox1" HorizontalAlignment="Left" Height="23" Margin="116,179,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Grid.Column="1"/>
+        <Label x:Name="elapsedLabel" Content="" HorizontalAlignment="Left" Margin="523,114,0,0" VerticalAlignment="Top" Width="155" Height="28" Grid.Column="1"/>
+        <TextBlock HorizontalAlignment="Left" Height="51" Margin="258,151,0,0" TextWrapping="Wrap" Text="This tool will extract the Facial Landmarks (color image and world coordinates) and the Detected Faces from all frames, where each frame contains 3 streams: RGB, Depth and IR." VerticalAlignment="Top" Width="375" TextAlignment="Justify" Grid.Column="1"/>
+        <Button x:Name="stopButton" Grid.ColumnSpan="2" Content="Stop" HorizontalAlignment="Left" Height="33" Margin="377,240,0,0" VerticalAlignment="Top" Width="89" Click="stopButton_Click"/>
 
     </Grid>
 </Window>

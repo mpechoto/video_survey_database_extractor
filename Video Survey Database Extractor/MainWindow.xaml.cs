@@ -28,16 +28,11 @@ namespace Video_Survey_Database_Extractor
     public partial class MainWindow : Window
     {
         private PXCMSenseManager sm;
-        private Thread processingThread;
-        //private string landmarks = null;
-        //private Window w;
+        private Thread processingThread;        
         private string input_folder = null;
-        private string output_folder = null;
-        private string output_file = null;
+        private string output_folder = null;        
         private IEnumerable<CheckBox> imageStreams;
-
         List<string> dirsSource;
-
         struct Paths
         {
             public string csvFile;
@@ -50,7 +45,6 @@ namespace Video_Survey_Database_Extractor
         public struct Offset
         {
             public int x, y, w, h;
-
             public Offset(int p1, int p2, int p3, int p4)
             {
                 x = p1;
@@ -73,7 +67,7 @@ namespace Video_Survey_Database_Extractor
 
         private void ProcessingThread()
         {
-            string videoName, nameColor, nameDepth, nameIr, file, folder;
+            string videoName, nameColor, nameDepth, nameIr;
             int width = 640;
             int height = 480;
 
@@ -97,16 +91,16 @@ namespace Video_Survey_Database_Extractor
             //Offset Cropped rectangle
             Offset offset = new Offset(-10, -10, 20, 20);
 
-            //For each directory, extract all landmarks or images streams from all videos
+            //For each directory, extract all landmarks or images streams from all videos????????????
             foreach (var dir in dirsSource)
             {
                 //If the folder is not empty
                 if (Directory.EnumerateFileSystemEntries(dir).Any())
-                {
-                    //WriteToFile(dir);
+                {   
+                    //Create all directories and subfolders
                     Paths paths = SetupOutput(dir);
                     List<string> fileList = new List<string>(Directory.GetFiles(dir, "*.rssdk"));
-
+                    //For each video
                     foreach (var inputFile in fileList)
                     {
                         lostFrames = 0;
@@ -186,7 +180,7 @@ namespace Video_Survey_Database_Extractor
                                     //PXCMFaceData.PulseData pdata = face.QueryPulse();
                                     PXCMFaceData.LandmarksData landmarkData = face.QueryLandmarks();
                                     PXCMFaceData.DetectionData ddata = face.QueryDetection();
-
+                                    //Rectangle coordenates from detected face
                                     ddata.QueryBoundingRect(out PXCMRectI32 rect);
 
                                     //See the offset struct to define the values
@@ -204,8 +198,7 @@ namespace Video_Survey_Database_Extractor
 
                                     color.ReleaseAccess(imageColor);
                                     depth.ReleaseAccess(imageDepth);
-                                    ir.ReleaseAccess(imageIr);
-                                    
+                                    ir.ReleaseAccess(imageIr);                                    
 
                                     //file = Path.GetFileNameWithoutExtension(input_file);
                                     //folder = Path.GetFileName(Path.GetDirectoryName(input_file));
@@ -221,9 +214,7 @@ namespace Video_Survey_Database_Extractor
                                     //Crops the face images!
                                     CreateThumbnail(nameColor, new CroppedBitmap(wbm1, rect2crop));
                                     CreateThumbnail(nameDepth, new CroppedBitmap(wbm2, rect2crop));
-                                    CreateThumbnail(nameIr, new CroppedBitmap(wbm3, rect2crop));
-
-                                    
+                                    CreateThumbnail(nameIr, new CroppedBitmap(wbm3, rect2crop));                                    
 
                                     Debug.WriteLine((depthDistance / 10) + " cm" + " " + rect.x + " " + rect.y + " " + rect.w + " " + rect.h);
                                     /*
@@ -231,14 +222,6 @@ namespace Video_Survey_Database_Extractor
                                     y - The vertical coordinate of the top left pixel of the rectangle.
                                     w - The rectangle width in pixels.
                                     h -The rectangle height in pixels.*/
-                                    
-                                    
-                                                                       
-
-                                      
-
-                                    
-
 
                                     //var point3 = new PXCMPoint3DF32(); ????
                                     if (landmarkData != null)
@@ -270,18 +253,23 @@ namespace Video_Survey_Database_Extractor
                                 faceData.Dispose();
                             sm.ReleaseFrame();
 
-                            if (frameIndex % 5 == 0) //Save to disk each 5 Frames analyzed
-                            {
+                            //if (frameIndex % 5 == 0) //Save to disk each 5 Frames analyzed
+                            //{
                                 WriteToFile(paths.csvFile, landmarks);
                                 landmarks = null;
-                            }
+                            //}
                         }
-                        WriteToFile(paths.csvFile, landmarks); // Write the latest landmarks
-                        landmarks = null;
+                        //WriteToFile(paths.csvFile, landmarks); // Write the latest landmarks
+                        //landmarks = null;
                         sm.Dispose();
 
                         stopwatch.Stop();
-                        Debug.WriteLine($"Tempo passado: {stopwatch.Elapsed}");
+                        //Debug.WriteLine($"Tempo passado: {stopwatch.Elapsed}");
+                        //Update in realtime the current extraction
+                        Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            elapsedLabel.Content = String.Format("Elapsed Time: {0} (s)", stopwatch.Elapsed.TotalSeconds.ToString("F"));
+                        }));
                     }
                 }
             }
@@ -354,9 +342,9 @@ namespace Video_Survey_Database_Extractor
         {
             string landmarks = null;
             string file = path + "\\" + fileName + ".csv";
-            if (!File.Exists(file))
-            {
-                using (System.IO.StreamWriter fs = File.AppendText(file))
+            //if (!File.Exists(file))
+            //{
+            using (System.IO.StreamWriter fs = File.CreateText(file))// AppendText(file))
                 {                    
                     //landmarks += "Video Index" + ";" + "User ID" + ";" + "Frame Index" + ";" + "Time Stamp" + ";"; // + "landmarkIndex" + ";" + "X" + ";" + "Y" + ";" + "Z" + '\n';
                     landmarks += "Video Name" + ";" + "Frame Index" + ";" + "Frame RGB" + ";" + "Frame Depth" + ";" + "Frame IR" + ";" + "Time Stamp (100ns)" + ";"; // + "landmarkIndex" + ";" + "X" + ";" + "Y" + ";" + "Z" + '\n';
@@ -376,49 +364,9 @@ namespace Video_Survey_Database_Extractor
                     fs.Write(landmarks);
                     landmarks = null;
                 }
-            }
+            //}
             return file;
         }
-
-        /*private void WriteToFile(string folderName)
-        {
-            output_file = output_folder + "\\" + folderName.Split('\\').Last() + ".csv";
-
-            if (File.Exists(output_file))//Append more data
-            {
-                using (System.IO.StreamWriter sw = File.AppendText(output_file))
-                {
-                    //get world coordinate
-                    sw.Write(landmarks);
-                }
-                landmarks = null;
-            }
-            else // Writes header on the beginning of the file
-            {
-                using (System.IO.StreamWriter fs = File.AppendText(output_file))
-                {
-                    //Debug.WriteLine("entramos do write else");
-                    //landmarks += "Video Index" + ";" + "User ID" + ";" + "Frame Index" + ";" + "Time Stamp" + ";"; // + "landmarkIndex" + ";" + "X" + ";" + "Y" + ";" + "Z" + '\n';
-                    landmarks += "Video Name" + ";" + "Frame Index" + ";" + "Frame RGB" + ";" + "Frame Depth" + ";" + "Frame IR" + ";" + "Time Stamp (100ns)" + ";"; // + "landmarkIndex" + ";" + "X" + ";" + "Y" + ";" + "Z" + '\n';
-
-                    for (int lm = 0; lm < 78; lm++) // Dataframe headers with WORLD Coordinates landmarks in meters 
-                    {
-                        landmarks += "world_" + lm + "_X" + ";";
-                        landmarks += "world_" + lm + "_Y" + ";";
-                        landmarks += "world_" + lm + "_Z" + ";";
-                    }
-                    for (int lm = 0; lm < 78; lm++) // Dataframe headers with COLOR IMAGES landmarks 
-                    {
-                        landmarks += "color_" + lm + "_X" + ";";
-                        landmarks += "color_" + lm + "_Y" + ";";
-                        landmarks += "color_" + lm + "_Z" + ";";
-                    }
-                    landmarks += '\n';
-                    fs.Write(landmarks);
-                    landmarks = null;
-                }
-            }
-        }*/
 
         private void sourceButton_Click(object sender, RoutedEventArgs e)
         {
@@ -450,15 +398,15 @@ namespace Video_Survey_Database_Extractor
 
         private void ExtractButton_Click(object sender, RoutedEventArgs e)
         {
-            var checkboxName = new List<string> { "rgbCheckBox", "depthCheckBox", "irCheckBox" };
-            imageStreams = (this.Content as Panel).Children.OfType<CheckBox>().Where(x => x.IsChecked == true && checkboxName.Contains(x.Name));
-            foreach (CheckBox c in imageStreams)
-            { Debug.WriteLine(c.Name); }
+            //var checkboxName = new List<string> { "rgbCheckBox", "depthCheckBox", "irCheckBox" };
+            //imageStreams = (this.Content as Panel).Children.OfType<CheckBox>().Where(x => x.IsChecked == true && checkboxName.Contains(x.Name));
+            //foreach (CheckBox c in imageStreams)
+            //{ Debug.WriteLine(c.Name); }
 
-            if (input_folder == null || output_folder == null || !imageStreams.Any())
+            if (input_folder == null || output_folder == null)// || !imageStreams.Any())
             {
-                string message = "Please, select the Source and Output directories!\n Choose at least one kind of Image Stream!";
-                string caption = "Missing root folder or Image Stream";
+                string message = "Please, select the Source and Output directories!";
+                string caption = "Missing root folder";
                 WinForms.MessageBoxButtons buttons = WinForms.MessageBoxButtons.OK;
                 WinForms.DialogResult result;
                 // Displays the MessageBox.
@@ -471,5 +419,19 @@ namespace Video_Survey_Database_Extractor
                 processingThread.Start();
             }
         }
+
+        //Continuar o botao de STOP!!!
+        private void stopButton_Click(object sender, RoutedEventArgs e)
+        {            
+            string message = "Are you sure to abort the database extraction?\n You will need to start from beginning if you stop now!";
+            string caption = "Stop Extraction";
+            WinForms.MessageBoxButtons buttons = WinForms.MessageBoxButtons.YesNo;
+            WinForms.DialogResult result;
+            // Displays the MessageBox.
+            result = WinForms.MessageBox.Show(message, caption, buttons);
+
+            if (result == WinForms.DialogResult.Yes)
+                processingThread.Abort();             
+        }        
     }
 }
