@@ -16,6 +16,7 @@ using System.Windows.Shapes;
 using WinForms = System.Windows.Forms;
 using System.Threading;
 using System.Diagnostics;
+
 //using System.Windows.Forms;
 //using Control = System.Windows.Controls.Control;
 
@@ -29,7 +30,7 @@ namespace Video_Survey_Database_Extractor
         private PXCMSenseManager sm;
         private Thread processingThread;
         //private string landmarks = null;
-
+        //private Window w;
         private string input_folder = null;
         private string output_folder = null;
         private string output_file = null;
@@ -45,6 +46,20 @@ namespace Video_Survey_Database_Extractor
             public string irFolder;
         }
 
+        //Offset from rectangle crop image
+        public struct Offset
+        {
+            public int x, y, w, h;
+
+            public Offset(int p1, int p2, int p3, int p4)
+            {
+                x = p1;
+                y = p2;
+                w = p3;
+                h = p4;
+            }
+        }
+
         public MainWindow()
         {
             InitializeComponent();
@@ -54,14 +69,14 @@ namespace Video_Survey_Database_Extractor
         {
             processingThread.Abort();
             sm.Dispose();
-        }
+        }        
 
         private void ProcessingThread()
         {
             string videoName, nameColor, nameDepth, nameIr, file, folder;
             int width = 640;
             int height = 480;
-            
+
             int frameIndex = 0;
             int nframes = 0;
             int lostFrames = 0;
@@ -75,10 +90,12 @@ namespace Video_Survey_Database_Extractor
             PXCMImage.ImageData imageDepth;
             PXCMImage.ImageData imageIr;
             WriteableBitmap wbm1, wbm2, wbm3;
-
+            Int32Rect rect2crop;
             PXCMFaceModule faceModule;
             PXCMFaceConfiguration faceConfig;
             PXCMFaceData faceData = null;
+            //Offset Cropped rectangle
+            Offset offset = new Offset(-10, -10, 20, 20);
 
             //For each directory, extract all landmarks or images streams from all videos
             foreach (var dir in dirsSource)
@@ -113,8 +130,7 @@ namespace Video_Survey_Database_Extractor
                         sm.EnableStream(PXCMCapture.StreamType.STREAM_TYPE_COLOR, width, height, 0);
                         sm.EnableStream(PXCMCapture.StreamType.STREAM_TYPE_DEPTH, width, height);
                         sm.EnableStream(PXCMCapture.StreamType.STREAM_TYPE_IR, width, height);
-
-
+                        
                         //Extract Landmarks
                         sm.EnableFace();
                         faceModule = sm.QueryFace();
@@ -124,6 +140,7 @@ namespace Video_Survey_Database_Extractor
                         faceConfig.detection.maxTrackedFaces = 1;
                         faceConfig.detection.isEnabled = true;
                         faceConfig.EnableAllAlerts();
+                        //faceConfig.QueryPulse().Enable();
                         faceConfig.ApplyChanges();
 
                         sm.Init();
@@ -148,7 +165,7 @@ namespace Video_Survey_Database_Extractor
                             if (faceData != null)
                             {
                                 Int32 nfaces = faceData.QueryNumberOfDetectedFaces();
-                                
+
                                 frameTimeStamp = sm.captureManager.QueryFrameTimeStamp();
                                 //PXCMCapture.Sample sample = senseManager.QuerySample();
                                 if (nfaces == 0) //If none face was detected, we will consider as a "lost frame"
@@ -159,16 +176,27 @@ namespace Video_Survey_Database_Extractor
                                 {
                                     //Retrieve the image
                                     //sample = sm.QueryFaceSample();
-                                    sample = sm.QuerySample();                                    
+                                    sample = sm.QuerySample();
                                     // Work on the images
                                     color = sample.color;
                                     depth = sample.depth;
                                     ir = sample.ir;
 
+                                    PXCMFaceData.Face face = faceData.QueryFaceByIndex(i);
+                                    //PXCMFaceData.PulseData pdata = face.QueryPulse();
+                                    PXCMFaceData.LandmarksData landmarkData = face.QueryLandmarks();
+                                    PXCMFaceData.DetectionData ddata = face.QueryDetection();
+
+                                    ddata.QueryBoundingRect(out PXCMRectI32 rect);
+
+                                    //See the offset struct to define the values
+                                    rect2crop = new Int32Rect(rect.x + offset.x, rect.y + offset.y, rect.h + offset.h, rect.w + offset.h);
+                                    ddata.QueryFaceAverageDepth(out Single depthDistance);
+
                                     color.AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.PixelFormat.PIXEL_FORMAT_RGB32, out imageColor);
                                     depth.AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.PixelFormat.PIXEL_FORMAT_DEPTH_RAW, out imageDepth);
                                     ir.AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.PixelFormat.PIXEL_FORMAT_RGB24, out imageIr);
-                            
+
                                     //convert it to Bitmap
                                     wbm1 = imageColor.ToWritableBitmap(0, color.info.width, color.info.height, 100.0, 100.0);
                                     wbm2 = imageDepth.ToWritableBitmap(0, depth.info.width, depth.info.height, 100.0, 100.0);
@@ -176,21 +204,42 @@ namespace Video_Survey_Database_Extractor
 
                                     color.ReleaseAccess(imageColor);
                                     depth.ReleaseAccess(imageDepth);
-                                    ir.ReleaseAccess(imageIr);                                                                    
-                                                                        
+                                    ir.ReleaseAccess(imageIr);
+                                    
+
                                     //file = Path.GetFileNameWithoutExtension(input_file);
                                     //folder = Path.GetFileName(Path.GetDirectoryName(input_file));
                                     videoName = inputFile.Split('\\').Last().Split('.')[0];
-                                    nameColor =  videoName + "_color_" + frameIndex + ".png";
-                                    nameDepth = videoName + "_depth_" + frameIndex + ".png";
-                                    nameIr = videoName + "_ir_" + frameIndex + ".png";
-                                    CreateThumbnail(paths.rgbFolder, nameColor, wbm1);
-                                    CreateThumbnail(paths.depthFolder, nameDepth, wbm2);
-                                    CreateThumbnail(paths.irFolder, nameIr, wbm3);
+                                    nameColor = paths.rgbFolder + "\\" + videoName + "_color_" + frameIndex + ".png";
+                                    nameDepth = paths.depthFolder + "\\" + videoName + "_depth_" + frameIndex + ".png";
+                                    nameIr = paths.irFolder + "\\" + videoName + "_ir_" + frameIndex + ".png";
+
+                                    //CroppedBitmap croppedBitmap = new CroppedBitmap(wbm3, rect2);
+
+                                    //CreateThumbnail(nameColor, croppedBitmap);
+
+                                    //Crops the face images!
+                                    CreateThumbnail(nameColor, new CroppedBitmap(wbm1, rect2crop));
+                                    CreateThumbnail(nameDepth, new CroppedBitmap(wbm2, rect2crop));
+                                    CreateThumbnail(nameIr, new CroppedBitmap(wbm3, rect2crop));
+
                                     
-                                    PXCMFaceData.Face face = faceData.QueryFaceByIndex(i);
-                                    PXCMFaceData.LandmarksData landmarkData = face.QueryLandmarks();
+
+                                    Debug.WriteLine((depthDistance / 10) + " cm" + " " + rect.x + " " + rect.y + " " + rect.w + " " + rect.h);
+                                    /*
+                                    x - The horizontal coordinate of the top left pixel of the rectangle.
+                                    y - The vertical coordinate of the top left pixel of the rectangle.
+                                    w - The rectangle width in pixels.
+                                    h -The rectangle height in pixels.*/
                                     
+                                    
+                                                                       
+
+                                      
+
+                                    
+
+
                                     //var point3 = new PXCMPoint3DF32(); ????
                                     if (landmarkData != null)
                                     {
@@ -199,15 +248,15 @@ namespace Video_Survey_Database_Extractor
 
                                         Application.Current.Dispatcher.BeginInvoke(new Action(() => textBox1.Text = frameIndex.ToString()));
                                         //Falta colocar os paths das imagens
-                                        landmarks += inputFile.Split('\\').Last() + ";" + frameIndex + ";" + paths.rgbFolder + ";" + paths.depthFolder + ";" + paths.irFolder + ";" + frameTimeStamp + ";"; // Begin line with frame info
+                                        landmarks += inputFile.Split('\\').Last() + ";" + frameIndex + ";" + nameColor + ";" + nameDepth + ";" + nameIr + ";" + frameTimeStamp + ";"; // Begin line with frame info
 
                                         for (int j = 0; j < landmarkPoints.Length; j++) // Writes landmarks coordinates along the line 
                                         {
                                             //get world coordinates
                                             landmarks += /*landmarkPoints[j].source.index + ";" +*/ landmarkPoints[j].world.x.ToString() + ";" + landmarkPoints[j].world.y.ToString() + ";" + landmarkPoints[j].world.z.ToString() + ";";
-                                        } 
+                                        }
                                         for (int j = 0; j < landmarkPoints.Length; j++)
-                                        { 
+                                        {
                                             //get coordinate of the image pixel
                                             landmarks += /*landmarkPoints[j].confidenceImage + ";" + */landmarkPoints[j].image.x.ToString() + ";" + landmarkPoints[j].image.y.ToString() + ";";
                                         }
@@ -215,7 +264,7 @@ namespace Video_Survey_Database_Extractor
                                     }
                                 }
                             }
-                           
+
                             // Release the frame
                             if (faceData != null)
                                 faceData.Dispose();
@@ -236,15 +285,15 @@ namespace Video_Survey_Database_Extractor
                     }
                 }
             }
-        }
+        }        
 
-        void CreateThumbnail(string folderName, string filename, BitmapSource image)
+        void CreateThumbnail(string output_file, BitmapSource image)
         {
             //string currentDir = output_folder + "\\" + folderName;
             //Directory.CreateDirectory(currentDir);
-            output_file = folderName + "\\" + filename;
+            //output_file = folderName + "\\" + filename;
 
-            if (filename != string.Empty)
+            if (output_file != string.Empty)
             {
                 using (FileStream stream = new FileStream(output_file, FileMode.Create))
                 {
