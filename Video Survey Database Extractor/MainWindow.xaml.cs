@@ -17,9 +17,6 @@ using WinForms = System.Windows.Forms;
 using System.Threading;
 using System.Diagnostics;
 
-//using System.Windows.Forms;
-//using Control = System.Windows.Controls.Control;
-
 namespace Video_Survey_Database_Extractor
 {
     /// <summary>
@@ -57,6 +54,8 @@ namespace Video_Survey_Database_Extractor
         public MainWindow()
         {
             InitializeComponent();
+            stopButton.IsEnabled = false;
+            ExtractButton.IsEnabled = true;
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -89,9 +88,9 @@ namespace Video_Survey_Database_Extractor
             PXCMFaceConfiguration faceConfig;
             PXCMFaceData faceData = null;
             //Offset Cropped rectangle
-            Offset offset = new Offset(-10, -10, 20, 20);
+            Offset offset = new Offset(0, 0, 0, 0);
 
-            //For each directory, extract all landmarks or images streams from all videos????????????
+            //For each directory, extract all landmarks or images streams from all videos
             foreach (var dir in dirsSource)
             {
                 //If the folder is not empty
@@ -104,7 +103,7 @@ namespace Video_Survey_Database_Extractor
                     foreach (var inputFile in fileList)
                     {
                         lostFrames = 0;
-                        Debug.WriteLine(inputFile);
+                        //Debug.WriteLine(inputFile);
                         // Create a SenseManager instance
                         sm = PXCMSenseManager.CreateInstance();
                         // Recording mode: true
@@ -180,11 +179,16 @@ namespace Video_Survey_Database_Extractor
                                     //PXCMFaceData.PulseData pdata = face.QueryPulse();
                                     PXCMFaceData.LandmarksData landmarkData = face.QueryLandmarks();
                                     PXCMFaceData.DetectionData ddata = face.QueryDetection();
+                                    PXCMFaceData.PoseData poseData = face.QueryPose();
+                                    poseData.QueryHeadPosition(out PXCMFaceData.HeadPosition headPosition);
+                                    poseData.QueryPoseAngles(out PXCMFaceData.PoseEulerAngles poseEulerAngles);
+                                    Debug.WriteLine(headPosition.headCenter.x + " " + headPosition.headCenter.y + " " + headPosition.headCenter.z + " " + poseEulerAngles.pitch + " " + poseEulerAngles.roll + " " + poseEulerAngles.yaw);
+                                    
                                     //Rectangle coordenates from detected face
                                     ddata.QueryBoundingRect(out PXCMRectI32 rect);
 
                                     //See the offset struct to define the values
-                                    rect2crop = new Int32Rect(rect.x + offset.x, rect.y + offset.y, rect.h + offset.h, rect.w + offset.h);
+                                    rect2crop = new Int32Rect(rect.x + offset.x, rect.y + offset.y, rect.w + offset.w, rect.h + offset.h);
                                     ddata.QueryFaceAverageDepth(out Single depthDistance);
 
                                     color.AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.PixelFormat.PIXEL_FORMAT_RGB32, out imageColor);
@@ -208,7 +212,6 @@ namespace Video_Survey_Database_Extractor
                                     nameIr = paths.irFolder + "\\" + videoName + "_ir_" + frameIndex + ".png";
 
                                     //CroppedBitmap croppedBitmap = new CroppedBitmap(wbm3, rect2);
-
                                     //CreateThumbnail(nameColor, croppedBitmap);
 
                                     //Crops the face images!
@@ -216,14 +219,13 @@ namespace Video_Survey_Database_Extractor
                                     CreateThumbnail(nameDepth, new CroppedBitmap(wbm2, rect2crop));
                                     CreateThumbnail(nameIr, new CroppedBitmap(wbm3, rect2crop));                                    
 
-                                    Debug.WriteLine((depthDistance / 10) + " cm" + " " + rect.x + " " + rect.y + " " + rect.w + " " + rect.h);
+                                    //Debug.WriteLine((depthDistance /1000 ) + " m" + " " + rect.x + " " + rect.y + " " + rect.w + " " + rect.h);
                                     /*
                                     x - The horizontal coordinate of the top left pixel of the rectangle.
                                     y - The vertical coordinate of the top left pixel of the rectangle.
                                     w - The rectangle width in pixels.
                                     h -The rectangle height in pixels.*/
 
-                                    //var point3 = new PXCMPoint3DF32(); ????
                                     if (landmarkData != null)
                                     {
                                         PXCMFaceData.LandmarkPoint[] landmarkPoints;
@@ -231,17 +233,17 @@ namespace Video_Survey_Database_Extractor
 
                                         Application.Current.Dispatcher.BeginInvoke(new Action(() => textBox1.Text = frameIndex.ToString()));
                                         //Falta colocar os paths das imagens
-                                        landmarks += inputFile.Split('\\').Last() + ";" + frameIndex + ";" + nameColor + ";" + nameDepth + ";" + nameIr + ";" + frameTimeStamp + ";"; // Begin line with frame info
+                                        landmarks += inputFile.Split('\\').Last() + ";" + frameIndex + ";" + nameColor + ";" + nameDepth + ";" + nameIr + ";" + frameTimeStamp + ";" + depthDistance.ToString("F") + ";" + poseEulerAngles.yaw.ToString("F") + ";" + poseEulerAngles.pitch.ToString("F") + ";" + poseEulerAngles.roll.ToString("F") + ";"; // Begin line with frame info
 
                                         for (int j = 0; j < landmarkPoints.Length; j++) // Writes landmarks coordinates along the line 
                                         {
                                             //get world coordinates
-                                            landmarks += /*landmarkPoints[j].source.index + ";" +*/ landmarkPoints[j].world.x.ToString() + ";" + landmarkPoints[j].world.y.ToString() + ";" + landmarkPoints[j].world.z.ToString() + ";";
+                                            landmarks += /*landmarkPoints[j].source.index + ";" +*/ (landmarkPoints[j].world.x*1000).ToString("F") + ";" + (landmarkPoints[j].world.y * 1000).ToString("F") + ";" + (landmarkPoints[j].world.z * 1000).ToString("F") + ";";
                                         }
                                         for (int j = 0; j < landmarkPoints.Length; j++)
                                         {
                                             //get coordinate of the image pixel
-                                            landmarks += /*landmarkPoints[j].confidenceImage + ";" + */landmarkPoints[j].image.x.ToString() + ";" + landmarkPoints[j].image.y.ToString() + ";";
+                                            landmarks += /*landmarkPoints[j].confidenceImage + ";" + */landmarkPoints[j].image.x.ToString("F") + ";" + landmarkPoints[j].image.y.ToString("F") + ";";
                                         }
                                         landmarks += '\n'; // Breaks line after the end of the frame coordinates                                        
                                     }
@@ -347,7 +349,7 @@ namespace Video_Survey_Database_Extractor
             using (System.IO.StreamWriter fs = File.CreateText(file))// AppendText(file))
                 {                    
                     //landmarks += "Video Index" + ";" + "User ID" + ";" + "Frame Index" + ";" + "Time Stamp" + ";"; // + "landmarkIndex" + ";" + "X" + ";" + "Y" + ";" + "Z" + '\n';
-                    landmarks += "Video Name" + ";" + "Frame Index" + ";" + "Frame RGB" + ";" + "Frame Depth" + ";" + "Frame IR" + ";" + "Time Stamp (100ns)" + ";"; // + "landmarkIndex" + ";" + "X" + ";" + "Y" + ";" + "Z" + '\n';
+                    landmarks += "Video Name" + ";" + "Frame Index" + ";" + "Frame RGB" + ";" + "Frame Depth" + ";" + "Frame IR" + ";" + "Time Stamp (100ns)" + ";" + "Average Distance to the Camera (mm)" + ";" + "Yaw" + ";" + "Pitch" + ";" + "Roll" + ";";
 
                     for (int lm = 0; lm < 78; lm++) // Dataframe headers with WORLD Coordinates landmarks in meters 
                     {
@@ -417,6 +419,8 @@ namespace Video_Survey_Database_Extractor
                 Debug.WriteLine("entrou no else");
                 processingThread = new Thread(new ThreadStart(ProcessingThread));
                 processingThread.Start();
+                stopButton.IsEnabled = true;
+                ExtractButton.IsEnabled = false;
             }
         }
 
@@ -431,7 +435,11 @@ namespace Video_Survey_Database_Extractor
             result = WinForms.MessageBox.Show(message, caption, buttons);
 
             if (result == WinForms.DialogResult.Yes)
-                processingThread.Abort();             
+            {
+                processingThread.Abort();
+                stopButton.IsEnabled = false;
+                ExtractButton.IsEnabled = true;
+            }
         }        
     }
 }
