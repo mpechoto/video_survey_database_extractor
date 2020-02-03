@@ -27,6 +27,7 @@
         <Label x:Name="elapsedLabel" Content="" HorizontalAlignment="Left" Margin="523,114,0,0" VerticalAlignment="Top" Width="155" Height="28" Grid.Column="1"/>
         <TextBlock HorizontalAlignment="Left" Height="51" Margin="258,151,0,0" TextWrapping="Wrap" Text="This tool will extract the Facial Landmarks (color image and world coordinates) and the Detected Faces from all frames, where each frame contains 3 streams: RGB, Depth and IR." VerticalAlignment="Top" Width="375" TextAlignment="Justify" Grid.Column="1"/>
         <Button x:Name="stopButton" Grid.ColumnSpan="2" Content="Stop" HorizontalAlignment="Left" Height="33" Margin="377,240,0,0" VerticalAlignment="Top" Width="89" Click="stopButton_Click"/>
+        <Button x:Name="surveyButton" Grid.ColumnSpan="2" Content="Survey" HorizontalAlignment="Left" Margin="514,240,0,0" VerticalAlignment="Top" Width="79" Height="33" Click="SurveyButton_Click"/>
 
     </Grid>
 </Window>
