@@ -31,7 +31,7 @@ namespace Video_Survey_Database_Extractor
         private string input_folder = null;
         private string output_folder = null;
         //Dictionary<string, string> dictPaths = new Dictionary<string, string>();
-        Dictionary<string, Paths> dictPaths2 = new Dictionary<string, Paths>();
+        Dictionary<string, Paths> dictPaths = new Dictionary<string, Paths>();
         private IEnumerable<CheckBox> imageStreams;
         List<string> dirsSource;
         List<string> dirsOutput;
@@ -70,7 +70,7 @@ namespace Video_Survey_Database_Extractor
             int lostFrames = 0;
             string landmarks = null;
             long frameTimeStamp = 0;
-            string currentOutputFolder = null;
+            //string currentOutputFolder = null;
             PXCMImage color;
             PXCMImage depth;
             PXCMImage ir;
@@ -97,7 +97,7 @@ namespace Video_Survey_Database_Extractor
                     //dictPaths.TryGetValue(dir, out currentOutputFolder);
                     //paths = GetCurrentPaths(currentOutputFolder);
 
-                    dictPaths2.TryGetValue(dir, out paths);
+                    dictPaths.TryGetValue(dir, out paths);
                     List<string> fileList = new List<string>(Directory.GetFiles(dir, "*.rssdk"));
                     //For each video
                     foreach (var inputFile in fileList)
@@ -282,7 +282,6 @@ namespace Video_Survey_Database_Extractor
             //string currentDir = output_folder + "\\" + folderName;
             //Directory.CreateDirectory(currentDir);
             //output_file = folderName + "\\" + filename;
-
             if (output_file != string.Empty)
             {
                 using (FileStream stream = new FileStream(output_file, FileMode.Create))
@@ -396,7 +395,7 @@ namespace Video_Survey_Database_Extractor
                     Directory.CreateDirectory(paths.irFolder);
                 }
                // dictPaths.Add(dir,output);
-                dictPaths2.Add(dir,paths);
+                dictPaths.Add(dir,paths);
             }            
             /*foreach (var s in streamFolderNames) //Create subfolders (RGB, Depth, IR) where images will be saved
             {
@@ -511,15 +510,43 @@ namespace Video_Survey_Database_Extractor
         private void SurveyButton_Click(object sender, RoutedEventArgs e)
         {
             SetupOutput();
+            GenerateIndexLabels();            
+        }
+
+        private void GenerateIndexLabels()//TESTAR
+        {
             Record record = new Record();
             VideosCollection videos = new VideosCollection();
-            string csvFile = @"C:\temp2\survey.csv";
+            string indexFile = paths.root + "\\" + "Index.csv";
+            string surveyFile = null;
+            string nameFile = null;
+            string stringTemp = null;
+
+            foreach (var d in dictPaths)
+            {
+                surveyFile = Directory.GetFiles(d.Key, "Survey.txt")[0];
+                videos = LoadSurveyJson(surveyFile);
+                stringTemp += d.Key + ";" + d.Value.root + ";";
+                foreach (var v in videos.Videos)
+                {
+                    stringTemp += v.VideoName + ";";
+                    foreach (var a in v.Answers)
+                        stringTemp += a.Answer + ";";
+                    stringTemp += "\n";
+                }
+                using (StreamWriter sw = new StreamWriter(indexFile, true, Encoding.GetEncoding("ISO-8859-1")))
+                {
+                    sw.WriteLine(stringTemp);
+                    stringTemp = null;
+                }
+            }
+
+            //string csvFile = @"C:\temp2\survey.csv";
             //record = LoadRecordJson(@"C:\Release\Records\Record_1_@28-11-2018_22-30\MURILO.txt");            
             //Debug.WriteLine(JsonConvert.SerializeObject(record, Formatting.Indented));
-            
-            videos = LoadSurveyJson(@"C:\Release\Records\Record_1_@28-11-2018_22-30\Survey.txt");
-            
-            SaveIndex(videos, csvFile);
+
+            //videos = LoadSurveyJson(@"C:\Release\Records\Record_1_@28-11-2018_22-30\Survey.txt");
+           // SaveIndex(videos, csvFile);
             //Debug.WriteLine(JsonConvert.SerializeObject(videos, Formatting.Indented));
         }
 
