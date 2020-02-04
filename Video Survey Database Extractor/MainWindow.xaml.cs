@@ -207,9 +207,9 @@ namespace Video_Survey_Database_Extractor
                                     //file = Path.GetFileNameWithoutExtension(input_file);
                                     //folder = Path.GetFileName(Path.GetDirectoryName(input_file));
                                     videoName = inputFile.Split('\\').Last().Split('.')[0];
-                                    nameColor = paths.rgbFolder + "\\" + videoName + "_color_" + frameIndex + ".png";
-                                    nameDepth = paths.depthFolder + "\\" + videoName + "_depth_" + frameIndex + ".png";
-                                    nameIr = paths.irFolder + "\\" + videoName + "_ir_" + frameIndex + ".png";
+                                    nameColor = paths.rgbFolder + "\\" + videoName + "\\" + videoName + "_color_" + frameIndex + ".png";
+                                    nameDepth = paths.depthFolder + "\\" + videoName + "\\" + videoName + "_depth_" + frameIndex + ".png";
+                                    nameIr = paths.irFolder + "\\" + videoName + "\\" + videoName + "_ir_" + frameIndex + ".png";
 
                                     //CroppedBitmap croppedBitmap = new CroppedBitmap(wbm3, rect2);
                                     //CreateThumbnail(nameColor, croppedBitmap);
@@ -308,19 +308,19 @@ namespace Video_Survey_Database_Extractor
             return dirsOutput = new List<string>(System.IO.Directory.EnumerateDirectories(output).Where(x => x.Contains("Record")));
         }
 
-   /*     public Paths GetCurrentPaths(string dir)
-        {
-            var streamFolderNames = new List<string> { "\\RGB", "\\Depth", "\\IR" };
-            var paths = new Paths
-            {
-                csvFile = Directory.GetFiles(dir, "*.csv")[0], //Create CSV File
-                rgbFolder = dir + streamFolderNames[0],
-                depthFolder = dir + streamFolderNames[1],
-                irFolder = dir + streamFolderNames[2]
-            };
-            return paths;
-        }*/
-        
+        /*     public Paths GetCurrentPaths(string dir)
+             {
+                 var streamFolderNames = new List<string> { "\\RGB", "\\Depth", "\\IR" };
+                 var paths = new Paths
+                 {
+                     csvFile = Directory.GetFiles(dir, "*.csv")[0], //Create CSV File
+                     rgbFolder = dir + streamFolderNames[0],
+                     depthFolder = dir + streamFolderNames[1],
+                     irFolder = dir + streamFolderNames[2]
+                 };
+                 return paths;
+             }*/
+
         /*private Paths SetupOutput(string folderName)
         {
             var streamFolderNames = new List<string> { "\\RGB", "\\Depth", "\\IR" };
@@ -364,13 +364,17 @@ namespace Video_Survey_Database_Extractor
             string[] stringSeparator = new string[] { "_@" };
             string recordName;
             string output = null;
+            string videoName = null;
             var paths = new Paths();
+            dictPaths.Clear();
+            List<string> videosList = new List<string>();
 
             foreach (var dir in dirsSource)
             {
                 //If the folder is not empty
                 if (Directory.EnumerateFileSystemEntries(dir).Any())
                 {
+                    videosList = new List<string>(Directory.GetFiles(dir, "*.rssdk"));
                     recordName = dir.Split(charSeparator).Last().Split(stringSeparator, StringSplitOptions.None).First();
 
                     //recordName means Record_1, Record_2...
@@ -381,7 +385,7 @@ namespace Video_Survey_Database_Extractor
                     Directory.CreateDirectory(output); // C:\output\Record_X, where X = 1,2,3...
 
                     paths = new Paths
-                    {   
+                    {
                         root = output,
                         csvFile = CreateLandmarkHeader(output, recordName), //Create CSV File
                         rgbFolder = output + streamFolderNames[0],
@@ -393,10 +397,18 @@ namespace Video_Survey_Database_Extractor
                     Directory.CreateDirectory(paths.rgbFolder);
                     Directory.CreateDirectory(paths.depthFolder);
                     Directory.CreateDirectory(paths.irFolder);
+
+                    foreach (var inputFile in videosList)
+                    {
+                        videoName = inputFile.Split('\\').Last().Split('.')[0];
+                        Directory.CreateDirectory(paths.rgbFolder + "\\" + videoName);
+                        Directory.CreateDirectory(paths.depthFolder + "\\" + videoName);
+                        Directory.CreateDirectory(paths.irFolder + "\\" + videoName);
+                    }
                 }
-               // dictPaths.Add(dir,output);
-                dictPaths.Add(dir,paths);
-            }            
+                // dictPaths.Add(dir,output);
+                dictPaths.Add(dir, paths);
+            }
             /*foreach (var s in streamFolderNames) //Create subfolders (RGB, Depth, IR) where images will be saved
             {
                 Directory.CreateDirectory(output + s);
@@ -405,7 +417,7 @@ namespace Video_Survey_Database_Extractor
             }*/
             //return dictPaths;
         }
-        
+
         private string CreateLandmarkHeader(string path, string fileName)
         {
             string landmarks = null;
@@ -413,25 +425,25 @@ namespace Video_Survey_Database_Extractor
             //if (!File.Exists(file))
             //{
             using (System.IO.StreamWriter fs = File.CreateText(file))// AppendText(file))
-                {                    
-                    //landmarks += "Video Index" + ";" + "User ID" + ";" + "Frame Index" + ";" + "Time Stamp" + ";"; // + "landmarkIndex" + ";" + "X" + ";" + "Y" + ";" + "Z" + '\n';
-                    landmarks += "Video Name" + ";" + "Frame Index" + ";" + "Frame RGB" + ";" + "Frame Depth" + ";" + "Frame IR" + ";" + "Time Stamp (100ns)" + ";" + "Average Distance to the Camera (mm)" + ";" + "Yaw" + ";" + "Pitch" + ";" + "Roll" + ";";
+            {
+                //landmarks += "Video Index" + ";" + "User ID" + ";" + "Frame Index" + ";" + "Time Stamp" + ";"; // + "landmarkIndex" + ";" + "X" + ";" + "Y" + ";" + "Z" + '\n';
+                landmarks += "Video Name" + ";" + "Frame Index" + ";" + "Frame RGB" + ";" + "Frame Depth" + ";" + "Frame IR" + ";" + "Time Stamp (100ns)" + ";" + "Average Distance to the Camera (mm)" + ";" + "Yaw" + ";" + "Pitch" + ";" + "Roll" + ";";
 
-                    for (int lm = 0; lm < 78; lm++) // Dataframe headers with WORLD Coordinates landmarks in meters 
-                    {
-                        landmarks += "world_" + lm + "_X" + ";";
-                        landmarks += "world_" + lm + "_Y" + ";";
-                        landmarks += "world_" + lm + "_Z" + ";";
-                    }
-                    for (int lm = 0; lm < 78; lm++) // Dataframe headers with COLOR IMAGES landmarks 
-                    {
-                        landmarks += "color_" + lm + "_X" + ";";
-                        landmarks += "color_" + lm + "_Y" + ";";                     
-                    }
-                    landmarks += '\n';
-                    fs.Write(landmarks);
-                    landmarks = null;
+                for (int lm = 0; lm < 78; lm++) // Dataframe headers with WORLD Coordinates landmarks in meters 
+                {
+                    landmarks += "world_" + lm + "_X" + ";";
+                    landmarks += "world_" + lm + "_Y" + ";";
+                    landmarks += "world_" + lm + "_Z" + ";";
                 }
+                for (int lm = 0; lm < 78; lm++) // Dataframe headers with COLOR IMAGES landmarks 
+                {
+                    landmarks += "color_" + lm + "_X" + ";";
+                    landmarks += "color_" + lm + "_Y" + ";";
+                }
+                landmarks += '\n';
+                fs.Write(landmarks);
+                landmarks = null;
+            }
             //}
             return file;
         }
@@ -489,9 +501,9 @@ namespace Video_Survey_Database_Extractor
                 ExtractButton.IsEnabled = false;
             }
         }
-        
+
         private void stopButton_Click(object sender, RoutedEventArgs e)
-        {            
+        {
             string message = "Are you sure to abort the database extraction?\n You will need to start from beginning if you stop now!";
             string caption = "Stop Extraction";
             WinForms.MessageBoxButtons buttons = WinForms.MessageBoxButtons.YesNo;
@@ -510,33 +522,35 @@ namespace Video_Survey_Database_Extractor
         private void SurveyButton_Click(object sender, RoutedEventArgs e)
         {
             SetupOutput();
-            GenerateIndexLabels();            
+            GenerateIndexLabels();
         }
 
         private void GenerateIndexLabels()//TESTAR
         {
             Record record = new Record();
             VideosCollection videos = new VideosCollection();
-            string indexFile = paths.root + "\\" + "Index.csv";
+            string indexFile = output_folder + "\\" + "Index.csv";
             string surveyFile = null;
-            string nameFile = null;
+            //string nameFile = null;
             string stringTemp = null;
+
+            stringTemp += "Record" + ";" + "Video Name" + ";" + "Q1" + ";" + "Q2" + ";" + "Q3" + ";" + "Q4" + ";" + "Q5" + ";" + "Q6" + ";" + "\n";
 
             foreach (var d in dictPaths)
             {
                 surveyFile = Directory.GetFiles(d.Key, "Survey.txt")[0];
                 videos = LoadSurveyJson(surveyFile);
-                stringTemp += d.Key + ";" + d.Value.root + ";";
+                //stringTemp += d.Value.root + ";";
                 foreach (var v in videos.Videos)
                 {
-                    stringTemp += v.VideoName + ";";
+                    stringTemp += d.Value.root + ";" + v.VideoName.Split('\\').Last() + ";";
                     foreach (var a in v.Answers)
                         stringTemp += a.Answer + ";";
                     stringTemp += "\n";
                 }
                 using (StreamWriter sw = new StreamWriter(indexFile, true, Encoding.GetEncoding("ISO-8859-1")))
                 {
-                    sw.WriteLine(stringTemp);
+                    sw.Write(stringTemp);
                     stringTemp = null;
                 }
             }
@@ -546,7 +560,7 @@ namespace Video_Survey_Database_Extractor
             //Debug.WriteLine(JsonConvert.SerializeObject(record, Formatting.Indented));
 
             //videos = LoadSurveyJson(@"C:\Release\Records\Record_1_@28-11-2018_22-30\Survey.txt");
-           // SaveIndex(videos, csvFile);
+            // SaveIndex(videos, csvFile);
             //Debug.WriteLine(JsonConvert.SerializeObject(videos, Formatting.Indented));
         }
 
@@ -560,47 +574,5 @@ namespace Video_Survey_Database_Extractor
             VideosCollection videos = JsonConvert.DeserializeObject<VideosCollection>(File.ReadAllText(filename));
             return videos;
         }
-
-        public void SaveIndex(VideosCollection videos, string csvFile)
-        {
-            string CSV = "";
-            foreach (var v in videos.Videos)
-            {
-                CSV += v.VideoName + ";";
-                foreach (var a in v.Answers)
-                    CSV += a.Answer + ";";                
-                CSV += "\n";
-            }
-            using (StreamWriter sw = new StreamWriter(csvFile, true, Encoding.GetEncoding("ISO-8859-1")))
-            {         
-                sw.WriteLine(CSV);
-            }
-            //record.Age''
-            //foreach (var prop in myObj.GetType().GetProperties())
-
-            //foreach (var prop in videos.GetType().GetProperties())
-            // {
-
-            //      Debug.WriteLine(prop.Name + ": " + prop.GetValue(videos, null));
-            /*List<string> row = new List<string>();
-
-            foreach (var dataItem in data)
-            {
-                row.Add(dataItem);
-            }
-
-            CSV += string.Join(";", row);*/
-            //   }
-            //foreach (var field in record.GetType().GetFields())
-            // {
-            //    Console.WriteLine(field.Name + ": " + field.GetValue(record));
-            //  }
-            /*using (System.IO.StreamWriter sw = File.AppendText(csvFile))
-            {
-                //get world and image coordinates
-                sw.Write(CSV);
-            }*/
-        }
-
-}
+    }
 }
