@@ -11,7 +11,7 @@
             <ColumnDefinition Width="0*"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <Button x:Name="ExtractButton" Content="Create Database" Margin="215,240,367,0" VerticalAlignment="Top" VerticalContentAlignment="Center" Height="33" Click="ExtractButton_Click" Grid.Column="1"/>
+        <Button x:Name="ExtractButton" Content="Create Database" Margin="116,243,466,0" VerticalAlignment="Top" VerticalContentAlignment="Center" Height="33" Click="ExtractButton_Click" Grid.Column="1"/>
         <Label Content="Current Frame:" HorizontalAlignment="Left" Margin="25,176,0,0" VerticalAlignment="Top" Grid.Column="1" Height="26" Width="88"/>
         <Label Content="Total Frames:" HorizontalAlignment="Left" Margin="25,146,0,0" VerticalAlignment="Top" RenderTransformOrigin="-1.846,0.198" Grid.Column="1" Height="26" Width="79"/>
         <TextBox x:Name="textBox2" HorizontalAlignment="Left" Height="23" Margin="116,151,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Grid.Column="1"/>
@@ -26,8 +26,8 @@
         <TextBox x:Name="textBox1" HorizontalAlignment="Left" Height="23" Margin="116,179,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Grid.Column="1"/>
         <Label x:Name="elapsedLabel" Content="" HorizontalAlignment="Left" Margin="523,114,0,0" VerticalAlignment="Top" Width="155" Height="28" Grid.Column="1"/>
         <TextBlock HorizontalAlignment="Left" Height="51" Margin="258,151,0,0" TextWrapping="Wrap" Text="This tool will extract the Facial Landmarks (color image and world coordinates) and the Detected Faces from all frames, where each frame contains 3 streams: RGB, Depth and IR." VerticalAlignment="Top" Width="375" TextAlignment="Justify" Grid.Column="1"/>
-        <Button x:Name="stopButton" Grid.ColumnSpan="2" Content="Stop" HorizontalAlignment="Left" Height="33" Margin="377,240,0,0" VerticalAlignment="Top" Width="89" Click="stopButton_Click"/>
-        <Button x:Name="surveyButton" Grid.ColumnSpan="2" Content="Survey" HorizontalAlignment="Left" Margin="514,240,0,0" VerticalAlignment="Top" Width="79" Height="33" Click="SurveyButton_Click"/>
+        <Button x:Name="stopButton" Grid.ColumnSpan="2" Content="Stop" HorizontalAlignment="Left" Height="33" Margin="300,243,0,0" VerticalAlignment="Top" Width="89" Click="stopButton_Click"/>
+        <Button x:Name="setupButton" Grid.ColumnSpan="2" Content="Setup Output" HorizontalAlignment="Left" Margin="468,243,0,0" VerticalAlignment="Top" Width="89" Height="33" Click="SetupButton_Click"/>
 
     </Grid>
 </Window>
